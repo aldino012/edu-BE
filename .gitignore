@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+
+# Environment Variables
+.env
+.env.*
+
+# Logs
+npm-debug.log*
+yarn-error.log*
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Uploads lokal (agar sampah testing tidak ikut terupload)
+src/uploads/images/*
+src/uploads/audio/*
+!src/uploads/images/.gitkeep
+!src/uploads/audio/.gitkeep

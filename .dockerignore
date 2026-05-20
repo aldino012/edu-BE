@@ -1,0 +1,7 @@
+node_modules
+npm-debug.log
+.env
+Dockerfile
+.dockerignore
+.git
+src/uploads  # (Opsional: Agar file upload lokal tidak ikut masuk ke image dasar)

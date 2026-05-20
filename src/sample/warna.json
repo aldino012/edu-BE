@@ -1,0 +1,72 @@
+[
+  {
+    "category_id": 3,
+    "value": "#FF0000",
+    "label": "Merah",
+    "image_url": null,
+    "audio_url": "/uploads/audio/merah.mp3"
+  },
+  {
+    "category_id": 3,
+    "value": "#0000FF",
+    "label": "Biru",
+    "image_url": null,
+    "audio_url": "/uploads/audio/biru.mp3"
+  },
+  {
+    "category_id": 3,
+    "value": "#FFFF00",
+    "label": "Kuning",
+    "image_url": null,
+    "audio_url": "/uploads/audio/kuning.mp3"
+  },
+  {
+    "category_id": 3,
+    "value": "#008000",
+    "label": "Hijau",
+    "image_url": null,
+    "audio_url": "/uploads/audio/hijau.mp3"
+  },
+  {
+    "category_id": 3,
+    "value": "#000000",
+    "label": "Hitam",
+    "image_url": null,
+    "audio_url": "/uploads/audio/hitam.mp3"
+  },
+  {
+    "category_id": 3,
+    "value": "#FFFFFF",
+    "label": "Putih",
+    "image_url": null,
+    "audio_url": "/uploads/audio/putih.mp3"
+  },
+  {
+    "category_id": 3,
+    "value": "#8B4513",
+    "label": "Coklat",
+    "image_url": null,
+    "audio_url": "/uploads/audio/coklat.mp3"
+  },
+  {
+    "category_id": 3,
+    "value": "#800080",
+    "label": "Ungu",
+    "image_url": null,
+    "audio_url": "/uploads/audio/ungu.mp3"
+  },
+  {
+    "category_id": 3,
+    "value": "#FFA500",
+    "label": "Oranye",
+    "image_url": null,
+    "audio_url": "/uploads/audio/oranye.mp3"
+  },
+  {
+    "category_id": 3,
+    "value": "#FFC0CB",
+    "label": "Merah Muda",
+    "image_url": null,
+    "audio_url": "/uploads/audio/merah muda.mp3"
+  }
+]
