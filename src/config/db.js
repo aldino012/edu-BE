@@ -1,7 +1,8 @@
-// Paksa Node.js menggunakan IPv4 (Mencegah error 'fetch failed' di Windows/Node 18+)
+// Paksa Node.js menggunakan IPv4
 require("dns").setDefaultResultOrder("ipv4first");
 
 const { Sequelize } = require("sequelize");
+const pg = require("pg"); // <-- 1. TAMBAHKAN IMPORT INI
 require("dotenv").config();
 
 const sequelize = new Sequelize(
@@ -11,6 +12,7 @@ const sequelize = new Sequelize(
   {
     host: process.env.DB_HOST,
     dialect: process.env.DB_DIALECT,
+    dialectModule: pg, // <-- 2. TAMBAHKAN INI (JURUS AMPUH VERCEL)
     port: process.env.DB_PORT,
     logging: false,
     define: {
@@ -23,17 +25,15 @@ const sequelize = new Sequelize(
       acquire: 30000,
       idle: 10000,
     },
-    // PERUBAHAN UTAMA: Supabase WAJIB menggunakan SSL
     dialectOptions: {
       ssl: {
-        require: true, // Wajib true untuk Supabase
-        rejectUnauthorized: false, // Menghindari error sertifikat di beberapa environment
+        require: true, 
+        rejectUnauthorized: false, 
       },
     },
   },
 );
 
-// Test koneksi (Opsional, agar kamu tahu kalau berhasil connect)
 sequelize
   .authenticate()
   .then(() => console.log("✅ Database terhubung ke Supabase!"))
