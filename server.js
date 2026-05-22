@@ -48,10 +48,9 @@ app.use((err, req, res, next) => {
   });
 });
 
-// --- FUNGSI BARU: SEEDER KATEGORI ---
+// --- SEEDER KATEGORI ---
 const seedDefaultCategories = async () => {
   try {
-    // Mengecek jumlah data di tabel categories
     const count = await Category.count();
 
     if (count === 0) {
@@ -76,8 +75,8 @@ const seedDefaultCategories = async () => {
     );
   }
 };
-// ------------------------------------
 
+// --- FUNGSI START SERVER (UNTUK LOKAL) ---
 const startServer = async () => {
   try {
     const dbType = (process.env.DB_DIALECT || "unknown").toUpperCase();
@@ -86,19 +85,13 @@ const startServer = async () => {
     await sequelize.authenticate();
     console.log(`✅ Database ${dbType} terhubung.`);
 
-    // --- BAGIAN YANG DIUPDATE ---
     console.log("⏳ Melakukan sinkronisasi tabel database...");
-    // alter: true akan membuat tabel jika belum ada,
-    // dan menyesuaikan kolom jika ada perubahan model
     await sequelize.sync({ alter: true });
     console.log("✅ Semua tabel berhasil dibuat/diperbarui!");
-    // ----------------------------
 
-    // Panggil seeder setelah database berhasil di-sync
     await seedDefaultCategories();
 
     console.log("⏳ Langkah 2: Menyalakan port server...");
-    // FIX: Menambahkan '0.0.0.0' agar bisa diakses dari luar container (Standar Industri Docker)
     app.listen(PORT, "0.0.0.0", () => {
       console.log("-----------------------------------------------");
       console.log(
@@ -108,9 +101,7 @@ const startServer = async () => {
       console.log("-----------------------------------------------");
     });
   } catch (error) {
-    console.error("❌ Gagal memulai server:");
-    console.error("Pesan Error:", error.message);
-    // Detail error untuk Postgres biasanya ada di original.detail
+    console.error("❌ Gagal memulai server:", error.message);
     if (error.original) {
       console.error(
         "Detail DB:",
@@ -121,4 +112,13 @@ const startServer = async () => {
   }
 };
 
-startServer();
+// --- LOGIKA PEMISAH LOKAL & VERCEL ---
+const isVercel = process.env.VERCEL === "1";
+
+if (!isVercel) {
+  // Jika di laptop sendiri, jalankan server dan sync database otomatis
+  startServer();
+}
+
+// Ekspor app Express untuk dibaca oleh serverless Vercel
+module.exports = app;
