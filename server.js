@@ -18,18 +18,20 @@ app.use(
   cors({
     origin: [
       "http://localhost:5173",
-      "https://edu-fe.vercel.app",
       "http://127.0.0.1:5173",
       "http://localhost:3000",
-      "http://localhost:8080", // Tambahan izin untuk Nginx/Docker Frontend
+      "http://localhost:8080",
+      "https://edu-fe.vercel.app", // <-- Domain Frontend Vercel kamu yang benar
     ],
     credentials: true,
   }),
 );
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use("/uploads", express.static(path.join(__dirname, "src/uploads")));
 
+// Rute API
 app.use("/api/contents", contentRoutes);
 app.use("/api/quizzes", quizRoutes);
 app.use("/api/categories", categoryRoutes);
