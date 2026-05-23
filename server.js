@@ -14,18 +14,26 @@ const categoryRoutes = require("./src/routes/categoryRoutes");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// --- UPDATE UTAMA: CORS PINTAR ---
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173",
-      "http://127.0.0.1:5173",
-      "http://localhost:3000",
-      "http://localhost:8080",
-      "https://edu-fe.vercel.app", // <-- Domain Frontend Vercel kamu yang benar
-    ],
+    origin: function (origin, callback) {
+      // Izinkan request jika tidak ada origin (seperti Postman), atau dari localhost, atau dari subdomain vercel manapun
+      if (
+        !origin ||
+        origin.includes("localhost") ||
+        origin.includes("127.0.0.1") ||
+        origin.includes("vercel.app")
+      ) {
+        callback(null, true);
+      } else {
+        callback(new Error("Diblokir oleh CORS"));
+      }
+    },
     credentials: true,
   }),
 );
+// ---------------------------------
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
