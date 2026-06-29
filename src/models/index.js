@@ -27,9 +27,7 @@ Quiz.belongsTo(Category, {
   as: 'category' 
 });
 
-// 3. Relasi Quiz dengan Content (PENTING)
-// Kita gunakan alias 'question_details' agar saat di Controller 
-// kita bisa memanggil data gambar/audio dengan nama tersebut.
+
 Quiz.belongsTo(Content, { 
   foreignKey: 'correct_id', 
   as: 'question_details' 

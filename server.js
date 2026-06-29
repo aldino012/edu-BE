@@ -7,9 +7,11 @@ require("dotenv").config();
 // Tambahkan impor Category dari models
 const { sequelize, Category } = require("./src/models");
 
+// Import routes
 const contentRoutes = require("./src/routes/contentRoutes");
 const quizRoutes = require("./src/routes/quizRoutes");
 const categoryRoutes = require("./src/routes/categoryRoutes");
+const partgameRoutes = require("./src/routes/partgameRoutes"); // ✅ TAMBAHAN BARU
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -43,6 +45,7 @@ app.use("/uploads", express.static(path.join(__dirname, "src/uploads")));
 app.use("/api/contents", contentRoutes);
 app.use("/api/quizzes", quizRoutes);
 app.use("/api/categories", categoryRoutes);
+app.use("/api/partgame", partgameRoutes); // ✅ TAMBAHAN BARU
 
 app.get("/", (req, res) => {
   res.json({
