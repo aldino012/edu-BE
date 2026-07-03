@@ -1,8 +1,8 @@
+require("dotenv").config();
 require("dns").setDefaultResultOrder("ipv4first");
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
-require("dotenv").config();
 
 // Tambahkan impor Category dari models
 const { sequelize, Category } = require("./src/models");
@@ -11,7 +11,8 @@ const { sequelize, Category } = require("./src/models");
 const contentRoutes = require("./src/routes/contentRoutes");
 const quizRoutes = require("./src/routes/quizRoutes");
 const categoryRoutes = require("./src/routes/categoryRoutes");
-const partgameRoutes = require("./src/routes/partgameRoutes"); // ✅ TAMBAHAN BARU
+const partgameRoutes = require("./src/routes/partgameRoutes");
+const authRoutes = require("./src/routes/authRoutes"); // ✅ TAMBAHAN BARU - AUTH ROUTES
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -42,10 +43,11 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/uploads", express.static(path.join(__dirname, "src/uploads")));
 
 // Rute API
+app.use("/api/auth", authRoutes); // ✅ TAMBAHAN BARU - AUTH ROUTES (diletakkan di atas)
 app.use("/api/contents", contentRoutes);
 app.use("/api/quizzes", quizRoutes);
 app.use("/api/categories", categoryRoutes);
-app.use("/api/partgame", partgameRoutes); // ✅ TAMBAHAN BARU
+app.use("/api/partgame", partgameRoutes);
 
 app.get("/", (req, res) => {
   res.json({
@@ -112,6 +114,7 @@ const startServer = async () => {
         `🚀 SERVER BERHASIL JALAN DI PORT ${PORT}! (Mendengarkan di 0.0.0.0)`,
       );
       console.log(`📡 Dialek DB: ${process.env.DB_DIALECT}`);
+      console.log("🔐 Auth endpoint: /api/auth/login");
       console.log("-----------------------------------------------");
     });
   } catch (error) {
