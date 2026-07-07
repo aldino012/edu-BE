@@ -25,7 +25,7 @@ const getPendingSession = (tempId) => pendingTwoFactorSessions.get(tempId);
 const deletePendingSession = (tempId) =>
   pendingTwoFactorSessions.delete(tempId);
 
-// ✅ BARU: Helper function untuk validasi super_admin
+// ✅ Helper function untuk validasi super_admin
 const checkSuperAdmin = async (userId) => {
   const { data: profile, error } = await supabaseAdmin
     .from("profiles")
@@ -46,7 +46,6 @@ const checkSuperAdmin = async (userId) => {
 
 /**
  * ✅ BARU: Auto-delete rejected users older than 1 hour
- * Fungsi ini akan menghapus semua user yang di-reject lebih dari 1 jam yang lalu
  */
 const cleanupRejectedUsers = async () => {
   try {
@@ -54,7 +53,6 @@ const cleanupRejectedUsers = async () => {
 
     console.log(`🔍 Checking for rejected users older than ${oneHourAgo}...`);
 
-    // Cari semua rejected users yang lebih dari 1 jam
     const { data: rejectedUsers, error: fetchError } = await supabaseAdmin
       .from("profiles")
       .select("id, full_name, updated_at")
@@ -80,10 +78,8 @@ const cleanupRejectedUsers = async () => {
     let deletedCount = 0;
     let failedCount = 0;
 
-    // Hapus satu per satu
     for (const user of rejectedUsers) {
       try {
-        // Hapus dari profiles
         const { error: deleteProfileError } = await supabaseAdmin
           .from("profiles")
           .delete()
@@ -98,7 +94,6 @@ const cleanupRejectedUsers = async () => {
           continue;
         }
 
-        // Hapus dari auth.users
         const { error: deleteUserError } =
           await supabaseAdmin.auth.admin.deleteUser(user.id);
 
@@ -107,7 +102,6 @@ const cleanupRejectedUsers = async () => {
             `⚠️ Profile deleted but failed to delete auth user for ${user.full_name}:`,
             deleteUserError,
           );
-          // Profile sudah terhapus, tapi auth user gagal
           deletedCount++;
           continue;
         }
@@ -149,7 +143,6 @@ const register = async (req, res) => {
 
     console.log("🔍 Register attempt:", { email, full_name });
 
-    // ✅ Validasi input wajib
     if (!email || !password || !full_name) {
       return res.status(400).json({
         success: false,
@@ -157,7 +150,6 @@ const register = async (req, res) => {
       });
     }
 
-    // ✅ Validasi format email dengan regex
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return res.status(400).json({
@@ -166,7 +158,6 @@ const register = async (req, res) => {
       });
     }
 
-    // ✅ Validasi password minimal 6 karakter (Supabase requirement)
     if (password.length < 6) {
       return res.status(400).json({
         success: false,
@@ -174,7 +165,6 @@ const register = async (req, res) => {
       });
     }
 
-    // ✅ Validasi nama lengkap
     if (full_name.trim().length < 3) {
       return res.status(400).json({
         success: false,
@@ -182,7 +172,6 @@ const register = async (req, res) => {
       });
     }
 
-    // ✅ Cek apakah email sudah terdaftar
     const { data: existingUsers, error: checkError } =
       await supabaseAdmin.auth.admin.listUsers();
 
@@ -202,12 +191,11 @@ const register = async (req, res) => {
       }
     }
 
-    // ✅ Buat user baru
     const { data: authData, error: authError } =
       await supabaseAdmin.auth.admin.createUser({
         email,
         password,
-        email_confirm: true, // Email langsung terkonfirmasi (tanpa verifikasi email)
+        email_confirm: true,
         user_metadata: { full_name },
       });
 
@@ -219,7 +207,6 @@ const register = async (req, res) => {
       });
     }
 
-    // ✅ Update profile dengan nama lengkap
     const { error: profileError } = await supabaseAdmin
       .from("profiles")
       .update({ full_name })
@@ -266,7 +253,6 @@ const login = async (req, res) => {
       });
     }
 
-    // Step 1: Validasi credentials
     const { data, error } = await supabaseAdmin.auth.signInWithPassword({
       email,
       password,
@@ -287,7 +273,6 @@ const login = async (req, res) => {
 
     const { user, session } = data;
 
-    // Step 2: Cek status approval
     const { data: profile, error: profileError } = await supabaseAdmin
       .from("profiles")
       .select(
@@ -303,7 +288,6 @@ const login = async (req, res) => {
       });
     }
 
-    // Cek apakah user pending approval
     if (profile.role === "pending_admin" && !profile.is_approved) {
       return res.status(403).json({
         success: false,
@@ -311,14 +295,11 @@ const login = async (req, res) => {
       });
     }
 
-    // Step 3: Cek apakah super admin dengan 2FA aktif
-    // ✅ PERBAIKAN: HANYA super_admin yang wajib 2FA
     const isSuperAdmin = profile.role === "super_admin";
     const twoFactorEnabled =
       profile.two_factor_enabled && profile.two_factor_secret;
 
     if (isSuperAdmin && twoFactorEnabled) {
-      // ⚠️ 2FA WAJIB - Simpan session sementara
       const tempId = crypto.randomUUID();
 
       pendingTwoFactorSessions.set(tempId, {
@@ -329,7 +310,7 @@ const login = async (req, res) => {
         role: profile.role,
         two_factor_secret: profile.two_factor_secret,
         createdAt: Date.now(),
-        expiresAt: Date.now() + 5 * 60 * 1000, // 5 menit
+        expiresAt: Date.now() + 5 * 60 * 1000,
       });
 
       console.log(
@@ -350,7 +331,6 @@ const login = async (req, res) => {
       });
     }
 
-    // Step 4: Login normal (tanpa 2FA)
     return res.status(200).json({
       success: true,
       need_2fa: false,
@@ -378,7 +358,6 @@ const login = async (req, res) => {
  */
 const getPendingAdmins = async (req, res) => {
   try {
-    // ✅ Validasi: Hanya super_admin
     const validation = await checkSuperAdmin(req.user.id);
     if (validation.error) {
       return res.status(403).json({
@@ -387,13 +366,11 @@ const getPendingAdmins = async (req, res) => {
       });
     }
 
-    // ✅ Jalankan cleanup sebelum mengambil data
     const cleanupResult = await cleanupRejectedUsers();
     if (cleanupResult.deleted > 0) {
       console.log(`🧹 Auto-cleaned ${cleanupResult.deleted} rejected users`);
     }
 
-    // ✅ Query untuk mengambil SEMUA pending admins (termasuk yang sudah di-reject)
     const { data: profiles, error } = await req.supabase
       .from("profiles")
       .select(
@@ -411,7 +388,6 @@ const getPendingAdmins = async (req, res) => {
       });
     }
 
-    // ✅ Handle jika tidak ada data
     if (!profiles || profiles.length === 0) {
       return res.status(200).json({
         success: true,
@@ -431,7 +407,6 @@ const getPendingAdmins = async (req, res) => {
       SUPABASE_SERVICE_ROLE_KEY,
     );
 
-    // ✅ Ambil email untuk setiap profile
     const profilesWithEmail = await Promise.all(
       profiles.map(async (profile) => {
         try {
@@ -448,7 +423,6 @@ const getPendingAdmins = async (req, res) => {
           return {
             ...profile,
             email: userData?.user?.email || "N/A",
-            // ✅ Pastikan rejection_reason selalu ada (null atau string)
             rejection_reason: profile.rejection_reason || null,
           };
         } catch (err) {
@@ -462,7 +436,6 @@ const getPendingAdmins = async (req, res) => {
       }),
     );
 
-    // ✅ Log untuk debugging
     console.log(`✅ Retrieved ${profilesWithEmail.length} pending admins`);
 
     return res.status(200).json({
@@ -484,7 +457,6 @@ const getPendingAdmins = async (req, res) => {
  */
 const getApprovedAdmins = async (req, res) => {
   try {
-    // ✅ Validasi: Hanya super_admin
     const validation = await checkSuperAdmin(req.user.id);
     if (validation.error) {
       return res.status(403).json({
@@ -493,7 +465,6 @@ const getApprovedAdmins = async (req, res) => {
       });
     }
 
-    // Query untuk mengambil admin yang sudah disetujui
     const { data: profiles, error } = await req.supabase
       .from("profiles")
       .select("id, full_name, role, is_approved, created_at, updated_at")
@@ -509,7 +480,6 @@ const getApprovedAdmins = async (req, res) => {
       });
     }
 
-    // Handle jika tidak ada data
     if (!profiles || profiles.length === 0) {
       return res.status(200).json({
         success: true,
@@ -529,7 +499,6 @@ const getApprovedAdmins = async (req, res) => {
       SUPABASE_SERVICE_ROLE_KEY,
     );
 
-    // Ambil email untuk setiap profile
     const profilesWithEmail = await Promise.all(
       profiles.map(async (profile) => {
         try {
@@ -578,7 +547,6 @@ const getApprovedAdmins = async (req, res) => {
  */
 const approveAdmin = async (req, res) => {
   try {
-    // ✅ Validasi: Hanya super_admin
     const validation = await checkSuperAdmin(req.user.id);
     if (validation.error) {
       return res.status(403).json({
@@ -637,7 +605,6 @@ const approveAdmin = async (req, res) => {
  */
 const rejectAdmin = async (req, res) => {
   try {
-    // ✅ Validasi: Hanya super_admin
     const validation = await checkSuperAdmin(req.user.id);
     if (validation.error) {
       return res.status(403).json({
@@ -693,11 +660,9 @@ const rejectAdmin = async (req, res) => {
 
 /**
  * ✅ BARU: Delete admin (untuk super admin)
- * Menghapus admin dari tabel profiles dan auth.users
  */
 const deleteAdmin = async (req, res) => {
   try {
-    // ✅ Validasi: Hanya super_admin
     const validation = await checkSuperAdmin(req.user.id);
     if (validation.error) {
       return res.status(403).json({
@@ -707,9 +672,8 @@ const deleteAdmin = async (req, res) => {
     }
 
     const { userId } = req.params;
-    const requesterId = req.user.id; // ID super admin yang melakukan delete
+    const requesterId = req.user.id;
 
-    // ✅ Validasi: Tidak boleh menghapus diri sendiri
     if (userId === requesterId) {
       return res.status(400).json({
         success: false,
@@ -717,7 +681,6 @@ const deleteAdmin = async (req, res) => {
       });
     }
 
-    // ✅ Cek apakah user yang akan dihapus ada
     const { data: profile, error: fetchError } = await supabaseAdmin
       .from("profiles")
       .select("*")
@@ -731,7 +694,6 @@ const deleteAdmin = async (req, res) => {
       });
     }
 
-    // ✅ Validasi: Tidak boleh menghapus super_admin lain
     if (profile.role === "super_admin") {
       return res.status(403).json({
         success: false,
@@ -739,7 +701,6 @@ const deleteAdmin = async (req, res) => {
       });
     }
 
-    // ✅ Step 1: Hapus dari tabel profiles
     const { error: deleteProfileError } = await supabaseAdmin
       .from("profiles")
       .delete()
@@ -753,13 +714,11 @@ const deleteAdmin = async (req, res) => {
       });
     }
 
-    // ✅ Step 2: Hapus dari auth.users
     const { error: deleteUserError } =
       await supabaseAdmin.auth.admin.deleteUser(userId);
 
     if (deleteUserError) {
       console.error("Error deleting auth user:", deleteUserError);
-      // Profile sudah terhapus, tapi auth user gagal
       return res.status(207).json({
         success: true,
         message: `Profil ${profile.full_name} berhasil dihapus, namun gagal menghapus akun autentikasi`,
@@ -822,6 +781,155 @@ const getCurrentUser = async (req, res) => {
   }
 };
 
+// ==========================================
+// ✅ FITUR BARU: RESET PASSWORD
+// ==========================================
+
+/**
+ * 1. Request password reset (Lupa Password)
+ * Mengirimkan email berisi link reset password ke user
+ */
+// Cari fungsi requestPasswordReset di authController.js
+const requestPasswordReset = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ success: false, message: "Email wajib diisi" });
+    }
+
+    // ✅ PERBAIKAN: Arahkan ke URL FRONTEND (Vite port 5173), BUKAN backend (3000)
+    const redirectTo = "http://localhost:5173/admin/reset-password"; 
+
+    const { error } = await supabaseAdmin.auth.resetPasswordForEmail(email, {
+      redirectTo: redirectTo,
+    });
+
+    if (error) {
+      console.error("❌ Reset Password Email Error:", error); // Cek terminal jika ada error
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Jika email terdaftar, link reset password telah dikirim.",
+    });
+  } catch (error) {
+    console.error("Request Password Reset Error:", error);
+    return res.status(500).json({ success: false, message: "Terjadi kesalahan pada server" });
+  }
+};
+
+/**
+ * 2. Update password setelah user klik link dari email
+ * Endpoint ini harus dipanggil saat user sudah ter-autentikasi dengan recovery token
+ * (Frontend akan menangkap token dari URL, membuat session, lalu mengirim request ke endpoint ini)
+ */
+const resetPassword = async (req, res) => {
+  try {
+    // req.user harus ada dari middleware autentikasi (karena user harus login via recovery token)
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        success: false,
+        message:
+          "Sesi tidak valid atau token reset password sudah kedaluwarsa. Silakan minta link reset password baru.",
+      });
+    }
+
+    const { new_password } = req.body;
+
+    if (!new_password) {
+      return res.status(400).json({
+        success: false,
+        message: "Password baru wajib diisi",
+      });
+    }
+
+    if (new_password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: "Password minimal 6 karakter",
+      });
+    }
+
+    // Update password menggunakan supabaseAdmin
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(
+      req.user.id,
+      {
+        password: new_password,
+      },
+    );
+
+    if (error) {
+      console.error("Update Password Error:", error);
+      return res.status(400).json({
+        success: false,
+        message: error.message || "Gagal memperbarui password",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message:
+        "Password berhasil diperbarui. Silakan login dengan password baru Anda.",
+    });
+  } catch (error) {
+    console.error("Reset Password Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Terjadi kesalahan pada server",
+    });
+  }
+};
+
+/**
+ * 3. ✅ BONUS: Admin reset password (untuk super admin)
+ * Mengubah password user secara langsung tanpa email (opsional)
+ */
+const adminResetPassword = async (req, res) => {
+  try {
+    const validation = await checkSuperAdmin(req.user.id);
+    if (validation.error) {
+      return res.status(403).json({
+        success: false,
+        message: validation.error,
+      });
+    }
+
+    const { userId } = req.params;
+    const { new_password } = req.body;
+
+    if (!new_password || new_password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: "Password baru wajib diisi dan minimal 6 karakter",
+      });
+    }
+
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+      password: new_password,
+    });
+
+    if (error) {
+      console.error("Admin Reset Password Error:", error);
+      return res.status(400).json({
+        success: false,
+        message: error.message || "Gagal mereset password user",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Password user berhasil direset oleh admin",
+    });
+  } catch (error) {
+    console.error("Admin Reset Password Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Terjadi kesalahan pada server",
+    });
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -835,4 +943,8 @@ module.exports = {
   cleanupRejectedUsers,
   getPendingSession,
   deletePendingSession,
+  // ✅ Export fitur baru
+  requestPasswordReset,
+  resetPassword,
+  adminResetPassword,
 };

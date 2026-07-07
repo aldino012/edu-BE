@@ -10,6 +10,9 @@ const requireAdmin = require("../middlewares/authMiddleware");
 router.post("/register", authController.register);
 router.post("/login", authController.login);
 
+// ✅ BARU: Request link reset password (dikirim ke email user)
+router.post("/request-password-reset", authController.requestPasswordReset);
+
 // 2FA verify saat login (public, karena user belum login)
 router.post("/2fa/verify", twoFactorController.verifyCode);
 
@@ -18,6 +21,10 @@ router.post("/2fa/verify", twoFactorController.verifyCode);
 // ==========================================
 router.post("/logout", requireAdmin, authController.logout);
 router.get("/me", requireAdmin, authController.getCurrentUser);
+
+// ✅ BARU: Update password setelah user klik link dari email
+// (Token recovery dari URL akan ditangkap oleh middleware requireAdmin)
+router.post("/reset-password", requireAdmin, authController.resetPassword);
 
 // ==========================================
 // SUPER ADMIN ROUTES (untuk manage admins)
